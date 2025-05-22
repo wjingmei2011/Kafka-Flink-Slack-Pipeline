@@ -15,7 +15,6 @@ function createConsumer(config, onData) {
   });
 };
 
-
 // Example function to demonstrate consumer usage
 async function consumerExample() {
   const config = {
