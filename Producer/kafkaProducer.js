@@ -35,6 +35,7 @@ function openBox(cb) {
 
 // Function to send email data to Kafka
 async function sendToKafka(topic, message) {
+  
   await producer.connect(); // Connect to the Kafka broker.
   await producer.send({
     topic, // Kafka topic to send the message to.
@@ -42,7 +43,11 @@ async function sendToKafka(topic, message) {
   });
   console.log('📤 Sent to Kafka:', message); // Log the message sent to Kafka.
 }
+// Update the topic name to "technews"
+const topicName = 'technews'; // Define the topic name
 
+// Replace the placeholder with the updated topic name
+await sendToKafka(topicName, emailData); // Send the email data to Kafka using the "technews" topic
 // Event: When IMAP is ready
 imap.once('ready', () => {
   openBox(async (err, box) => {
@@ -52,6 +57,7 @@ imap.once('ready', () => {
     console.log(`📬 Total messages: ${box.messages.total}`); // Log the total number of messages in the mailbox.
 
     // Fetch unread emails
+
     const fetch = imap.search(['UNSEEN'], (err, results) => {
       if (err || !results.length) {
         console.log('No unread emails found.');
@@ -59,7 +65,8 @@ imap.once('ready', () => {
         return;
       }
 
-      const fetch = imap.fetch(results, {
+      const latestEmail = [results[results.length - 1]];
+      const fetch = imap.fetch(latestEmail, {
         bodies: ['HEADER.FIELDS (SUBJECT)', 'TEXT'], // Fetch subject and body.
         struct: true, // Include the structure of the email (e.g., attachments).
       });
