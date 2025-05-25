@@ -2,12 +2,13 @@ const { Kafka } = require('kafkajs'); // KafkaJS is used to interact with Kafka 
 const Imap = require('imap'); // IMAP library is used to connect to an email server and fetch emails.
 const { decode } = require('quoted-printable'); // For decoding quoted-printable email content.
 const { TextDecoder } = require('util'); // For decoding UTF-8 text.
+const avro = require('avsc');  // Avro library is used for serialization and deserialization of messages.
 require('dotenv').config(); // Loads environment variables from a `.env` file.
 
 // Kafka configuration
 const kafka = new Kafka({
   clientId: 'news-producer', // A unique identifier for this Kafka client.
-  brokers: ['pkc-p11xm.us-east-1.aws.confluent.cloud:9092'], // Replace with your Confluent Cloud broker(s).
+  brokers: [process.env.BROKER_URL], // Replace with your Confluent Cloud broker(s).
   ssl: true, // Enable SSL for secure connection.
   sasl: {
     mechanism: 'plain', // SASL mechanism.
@@ -15,6 +16,7 @@ const kafka = new Kafka({
     password: process.env.CLUSTER_API_SECRET, // Confluent Cloud API secret.
   },
 });
+
 
 const producer = kafka.producer(); // Create a Kafka producer instance to send messages to Kafka.
 
@@ -33,21 +35,29 @@ function openBox(cb) {
   imap.openBox('Tech News', false, cb); // Open the "Tech News" mailbox in read-write mode.
 }
 
-// Function to send email data to Kafka
-async function sendToKafka(topic, message) {
-  
-  await producer.connect(); // Connect to the Kafka broker.
-  await producer.send({
-    topic, // Kafka topic to send the message to.
-    messages: [{ value: JSON.stringify(message) }], // The message payload (converted to JSON).
-  });
-  console.log('📤 Sent to Kafka:', message); // Log the message sent to Kafka.
-}
 // Update the topic name to "technews"
 const topicName = 'technews'; // Define the topic name
 
-// Replace the placeholder with the updated topic name
-await sendToKafka(topicName, emailData); // Send the email data to Kafka using the "technews" topic
+const emailSchema = avro.Type.forSchema({
+  type: 'record', // Define the schema as a record.
+  fields: [
+    { name: 'seqno', type: 'int' }, // Sequence number of the email.
+    { name: 'subject', type: 'string' }, // Subject of the email.
+    { name: 'body', type: 'string' }, // Body of the email.
+  ],
+});
+  
+// Function to send email data to Kafka
+async function sendToKafka(topic, message) {
+  const serializedMessage = emailSchema.toBuffer(message); // Serialize the message using Avro schema.
+  await producer.send({
+    topic, // Kafka topic to send the message to.
+    messages: [{ value: serializedMessage }], // The message payload (converted to AVRO).
+  });
+  console.log('📤 Sent to Kafka (avro):', message); // Log the message sent to Kafka.
+}
+
+
 // Event: When IMAP is ready
 imap.once('ready', () => {
   openBox(async (err, box) => {
@@ -56,17 +66,16 @@ imap.once('ready', () => {
     console.log(`✅ Connected to: ${box.name}`); // Log the name of the mailbox.
     console.log(`📬 Total messages: ${box.messages.total}`); // Log the total number of messages in the mailbox.
 
-    // Fetch unread emails
-
-    const fetch = imap.search(['UNSEEN'], (err, results) => {
+    
+    // search unread emails
+    const search = imap.search(['UNSEEN',['SINCE', '22-May-2025']], (err, results) => {
       if (err || !results.length) {
-        console.log('No unread emails found.');
+        console.log('Error during IMAP search or No unread emails found.');
         imap.end();
         return;
-      }
-
-      const latestEmail = [results[results.length - 1]];
-      const fetch = imap.fetch(latestEmail, {
+      };
+      // Fetch unread emails
+      const fetch = imap.fetch(results, {
         bodies: ['HEADER.FIELDS (SUBJECT)', 'TEXT'], // Fetch subject and body.
         struct: true, // Include the structure of the email (e.g., attachments).
       });
@@ -82,13 +91,20 @@ imap.once('ready', () => {
           stream.on('data', (chunk) => (buffer += chunk.toString('utf8'))); // Append each chunk to the buffer.
           stream.on('end', () => {
             if (info.which === 'HEADER.FIELDS (SUBJECT)') {
-              emailData.subject = buffer.match(/Subject: (.*)/)[1].trim(); // Extract the subject line. what does it mean??
+              const parsedHeader = Imap.parseHeader(buffer); // Extract the subject from the header.
+              if (parsedHeader.subject && parsedHeader.subject.length > 0) {
+                emailData.subject = parsedHeader.subject[0]; // Parse the subject header.
+              } else {
+                emailData.subject = 'No Subject'; // Default subject if none found.
+              }
             } else if (info.which === 'TEXT') {
               try {
                 const decoded = decode(buffer); // Decode quoted-printable content.
-                emailData.body = new TextDecoder('utf-8').decode(decoded); // Decode UTF-8 text.
+                let body = decoded.toString('utf-8'); // Decode UTF-8 text.
+               emailData.body = body; // Store the decoded body.
               } catch (err) {
                 console.error('Error decoding email body:', err);
+                emailData.body = '(Unable to decode email body)';
               }
             }
           });
@@ -96,7 +112,7 @@ imap.once('ready', () => {
 
         // Event: When the message fetching is complete
         msg.once('end', async () => {
-          await sendToKafka('emails', emailData); // Send the email data to Kafka.
+          await sendToKafka(topicName, emailData); // Send the email data to Kafka.
         });
       });
 
@@ -122,5 +138,6 @@ imap.once('end', () => {
 // Start the IMAP connection
 (async () => {
   console.log('Connecting to IMAP and Kafka...'); // Log the start of the connection process.
+  await producer.connect(); // Connect to the Kafka broker.
   imap.connect(); // Connect to the IMAP server.
 })();
