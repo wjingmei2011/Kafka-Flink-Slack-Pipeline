@@ -2,6 +2,7 @@ const { Kafka } = require('kafkajs'); // KafkaJS is used to interact with Kafka 
 const Imap = require('imap'); // IMAP library is used to connect to an email server and fetch emails.
 const { decode } = require('quoted-printable'); // For decoding quoted-printable email content.
 const { TextDecoder } = require('util'); // For decoding UTF-8 text.
+const {htmlToText} = require('html-to-text'); // Converts HTML content to plain text. 
 const avro = require('avsc');  // Avro library is used for serialization and deserialization of messages.
 require('dotenv').config(); // Loads environment variables from a `.env` file.
 
@@ -68,7 +69,7 @@ imap.once('ready', () => {
 
     
     // search unread emails
-    const search = imap.search(['UNSEEN',['SINCE', '22-May-2025']], (err, results) => {
+    const search = imap.search(['UNSEEN',['SINCE', '26-May-2025']], (err, results) => {
       if (err || !results.length) {
         console.log('Error during IMAP search or No unread emails found.');
         imap.end();
@@ -93,15 +94,42 @@ imap.once('ready', () => {
             if (info.which === 'HEADER.FIELDS (SUBJECT)') {
               const parsedHeader = Imap.parseHeader(buffer); // Extract the subject from the header.
               if (parsedHeader.subject && parsedHeader.subject.length > 0) {
-                emailData.subject = parsedHeader.subject[0]; // Parse the subject header.
+                emailData.subject = `*${parsedHeader.subject[0]}*`; // Parse the subject header.
               } else {
-                emailData.subject = 'No Subject'; // Default subject if none found.
+                emailData.subject = '*No Subject*'; // Default subject if none found.
               }
             } else if (info.which === 'TEXT') {
               try {
                 const decoded = decode(buffer); // Decode quoted-printable content.
                 let body = decoded.toString('utf-8'); // Decode UTF-8 text.
-               emailData.body = body; // Store the decoded body.
+
+                // Check if the body contains HTML
+                if (body.includes('<html') || body.includes('<body')) {
+                  // Convert HTML to plain text
+                  body = htmlToText(body, {
+                    wordwrap: 130, // Set word wrap length
+                    preserveNewlines: true, // Preserve newlines in the text
+                    tags: { a: 
+                      { options: { 
+                        ignoreHref: false,
+                        format: (node, options) => `<${node.attribs.href}|${node.children[0]?.data || 'Link'}>`, // Slack link format
+                       }, 
+                      },
+                    }, // Keep links in the text
+                  });
+                }
+                // Remove MIME headers and boundary markers
+                body = body.replace(/Content-Type:.*?(\r\n|\n|\r)+/g, '') // Remove Content-Type headers
+                .replace(/Content-Transfer-Encoding:.*?(\r\n|\n|\r)+/g, '') // Remove Content-Transfer-Encoding headers
+                .replace(/--.*?(\r\n|\n|\r)+/g, '') // Remove boundary markers
+                .replace(/(\r\n|\n|\r)+/g, '\n') // Normalize line breaks
+                .replace(/https?:\/\/[^\s]+/g, (url) => `<${url}|View Link>`) // Replace URLs with Slack link format
+                .replace(/<[^>]+>/g, '') // Remove any remaining HTML tags
+                .replace(/[^\x20-\x7E\n]/g, '') // Remove non-ASCII characters
+                .replace(/^(?:[A-Z0-9 &]+)$/gm, (match) => `*${match.trim()}*`) // Bold capitalized subjects
+                .replace(/^\[|\]$/gm, ''); // Remove stray brackets
+               
+                emailData.body = body.trim(); // Store the decoded body.
               } catch (err) {
                 console.error('Error decoding email body:', err);
                 emailData.body = '(Unable to decode email body)';
