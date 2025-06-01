@@ -56,11 +56,45 @@ async function consumeMessages() {
     });
 }
 // Function to send Kafka messages to Slack
+const MAX_BLOCK_TEXT = 2900; // Leave room for formatting
+
+function splitIntoBlocks(text, maxLen) { // Function to split text into blocks of a specified maximum length
+    const lines = text.split('\n');
+    const blocks = [];
+    let current = '';
+    for (const line of lines) {
+        if ((current + '\n' + line).length > maxLen) {
+            blocks.push(current);
+            current = line;
+        } else {
+            current += (current ? '\n' : '') + line;
+        }
+    }
+    if (current) blocks.push(current);
+    return blocks;
+}
+
 async function sendToSlack(message) {
     try {
-        const slackMessage = {
-            text: `New Tech News Email:\n*Subject:* ${message.subject}\n*Body:* ${message.body}`,
-        };
+        const bodyBlocks = splitIntoBlocks(message.body, MAX_BLOCK_TEXT); // Split the body into blocks if it exceeds the maximum length
+        const slackBlocks = [
+            {
+                type: "section",
+                text: {
+                    type: "mrkdwn",
+                    text: `*Subject:* ${message.subject}\n*Body:*`
+                }
+            },
+            ...bodyBlocks.map(chunk => ({
+                type: "section",
+                text: {
+                    type: "mrkdwn",
+                    text: chunk
+                }
+            }))
+        ];
+
+        const slackMessage = { blocks: slackBlocks };
 
         // Send the message to Slack using axios
         await axios.post(slackWebhookUrl, slackMessage);
