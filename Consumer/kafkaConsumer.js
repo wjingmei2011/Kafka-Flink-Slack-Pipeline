@@ -74,9 +74,37 @@ function splitIntoBlocks(text, maxLen) { // Function to split text into blocks o
     return blocks;
 }
 
+
+// Function to hyperlink headings in the email body
+function hyperlinkHeadings(body) {
+    const lines = body.split('\n');
+    const result = [];
+    for (let i = 0; i < lines.length; i++) {
+        const heading = lines[i];
+        const url = lines[i + 1];
+        // Match headings followed by a URL
+        if (
+            heading &&
+            url &&
+            /^https?:\/\/\S+$/.test(url) &&
+            heading.length < 300 // Ensure it's a heading, not a paragraph
+        ) {
+            // Embed the URL into the heading using Slack's hyperlink syntax
+            result.push(`<${url}|${heading}>`);
+            i++; // Skip the URL line
+        } else {
+            result.push(heading);
+        }
+    }
+    return result.join('\n');
+}
+
 async function sendToSlack(message) {
     try {
-        const bodyBlocks = splitIntoBlocks(message.body, MAX_BLOCK_TEXT); // Split the body into blocks if it exceeds the maximum length
+        const hyperlinkedBody = hyperlinkHeadings(message.body);
+
+        // Use the processed body here
+        const bodyBlocks = splitIntoBlocks(hyperlinkedBody, MAX_BLOCK_TEXT);
         const slackBlocks = [
             {
                 type: "section",
