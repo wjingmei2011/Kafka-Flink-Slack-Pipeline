@@ -69,7 +69,7 @@ imap.once('ready', () => {
 
     
     // search unread emails
-    const search = imap.search(['UNSEEN',['SINCE', '26-May-2025']], (err, results) => {
+    const search = imap.search(['UNSEEN',['ON', '4-JUNE-2025']], (err, results) => {
       if (err || !results.length) {
         console.log('Error during IMAP search or No unread emails found.');
         imap.end();
@@ -107,24 +107,35 @@ imap.once('ready', () => {
                 if (body.includes('<html') || body.includes('<body')) {
                   // Convert HTML to plain text
                   body = htmlToText(body, {
-                    wordwrap: 130, // Set word wrap length
+                    wordwrap: 230, // Set word wrap lengt 
                     preserveNewlines: true, // Preserve newlines in the text
                     tags: { a: 
                       { options: { 
-                        ignoreHref: false,
-                        format: (node, options) => `<${node.attribs.href}|${node.children[0]?.data || 'Link'}>`, // Slack link format
+                        format: (node, options) => `<${node.attribs.href}|*${node.children[0]?.data || 'Link'}*>` // Format links as Slack hyperlinks
                        }, 
                       },
-                    }, // Keep links in the text
+                    },
                   });
                 }
+
+                // Remove content before "TLDR"
+                const tldrIndex = body.search(/TLDR\s+\d{4}-\d{2}-\d{2}/); // Find the index of "TLDR YYYY-MM-DD"
+                if (tldrIndex !== -1) {  // If "TLDR" is found, keep content from that point onward
+                  body = body.substring(tldrIndex).trim();
+                }
+
+                // Remove content below "Love TLDR? Tell your friends and get rewards!"
+                const tldrEndIndex = body.search(/Love TLDR\? Tell your friends and get rewards!/);
+                if (tldrEndIndex !== -1) { // if the end marker is found, truncate the body
+                  body = body.substring(0, tldrEndIndex).trim(); // Keep content before the end marker
+                }
+
                 // Remove MIME headers and boundary markers
                 body = body.replace(/Content-Type:.*?(\r\n|\n|\r)+/g, '') // Remove Content-Type headers
                 .replace(/Content-Transfer-Encoding:.*?(\r\n|\n|\r)+/g, '') // Remove Content-Transfer-Encoding headers
                 .replace(/--.*?(\r\n|\n|\r)+/g, '') // Remove boundary markers
                 .replace(/(\r\n|\n|\r)+/g, '\n') // Normalize line breaks
-                .replace(/https?:\/\/[^\s]+/g, (url) => `<${url}|View Link>`) // Replace URLs with Slack link format
-                .replace(/<[^>]+>/g, '') // Remove any remaining HTML tags
+                .replace(/<[^>]+>/g, '') // Remove HTML tags
                 .replace(/[^\x20-\x7E\n]/g, '') // Remove non-ASCII characters
                 .replace(/^(?:[A-Z0-9 &]+)$/gm, (match) => `*${match.trim()}*`) // Bold capitalized subjects
                 .replace(/^\[|\]$/gm, ''); // Remove stray brackets
@@ -145,13 +156,15 @@ imap.once('ready', () => {
       });
 
       // Event: When all messages have been fetched
-      fetch.once('end', () => {
+
+      fetch.on('end', () => {
         console.log('✅ Done fetching.'); // Log that fetching is complete.
         imap.end(); // Close the IMAP connection.
       });
-    });
+      });
   });
 });
+
 
 // Event: On IMAP error
 imap.once('error', (err) => {
