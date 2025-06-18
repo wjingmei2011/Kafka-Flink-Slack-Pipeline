@@ -182,7 +182,7 @@ async function generateClaudeResponse(userMessage, context) {
   try {
 
     let contextInfo = '';
-    const recentHistory = await getRecentChannelHistory(context.client, context.channel, 10); // Get recent channel history
+    const recentHistory = await getRecentChannelHistory(context.client, context.channel, 50); // Get recent channel history
     if (recentHistory) {
       contextInfo = `\n\nRecent channel context:\n${recentHistory}\n\n`;
     }
