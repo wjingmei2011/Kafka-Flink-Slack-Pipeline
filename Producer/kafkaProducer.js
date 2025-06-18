@@ -69,7 +69,7 @@ imap.once('ready', () => {
 
     
     // search unread emails
-    const search = imap.search(['UNSEEN',['ON', '4-JUNE-2025']], (err, results) => {
+    const search = imap.search(['UNSEEN',['ON', '18-JUNE-2025']], (err, results) => {
       if (err || !results.length) {
         console.log('Error during IMAP search or No unread emails found.');
         imap.end();

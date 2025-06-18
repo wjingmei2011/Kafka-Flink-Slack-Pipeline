@@ -1,4 +1,8 @@
 
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000; // Port for the server
+
 const axios = require('axios');
 const { App } = require('@slack/bolt');
 const Anthropic = require('@anthropic-ai/sdk');
@@ -243,5 +247,11 @@ async function generateClaudeResponse(userMessage, context) {
   }
 })();
 
-// Export for use in your MCP server
-module.exports = { slackApp, generateClaudeResponse };
+// Basic Express server setup
+app.get ('/', (req, res) => {
+  res.send('Slack Event Server is running!'); // Basic endpoint to check server status
+}
+);
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
