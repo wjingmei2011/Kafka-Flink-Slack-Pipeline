@@ -2,7 +2,6 @@ notes.log
 .env
 node_modules/
 package-lock.json
-package.json
 dist/
 logs/
 .DS_Store
