@@ -4,6 +4,19 @@ const avro = require('avsc'); // Import avsc for Avro serialization
 require('dotenv').config(); // Load environment variables from .env file
 
 
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000; // Port for the server
+
+// Basic Express server setup
+app.get ('/', (req, res) => {
+  res.send('Producer Server is running!'); // Basic endpoint to check server status
+}
+);
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
 // Kafka configuration
 
 const kafka = new Kafka({
