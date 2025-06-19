@@ -107,39 +107,69 @@ imap.once('ready', () => {
                 if (body.includes('<html') || body.includes('<body')) {
                   // Convert HTML to plain text
                   body = htmlToText(body, {
-                    wordwrap: 230, // Set word wrap lengt 
+                    wordwrap: 230, // Set word wrap length
                     preserveNewlines: true, // Preserve newlines in the text
-                    tags: { a: 
-                      { options: { 
-                        format: (node, options) => `<${node.attribs.href}|*${node.children[0]?.data || 'Link'}*>` // Format links as Slack hyperlinks
-                       }, 
-                      },
-                    },
+                    tags: {
+                      a: {
+                        options: {
+                          format: (node, options) => {
+                            const text = node.children[0]?.data || '';
+                            const href = node.attribs.href || '';
+                            if (
+                              node.parent &&
+                              node.parent.name &&
+                              /^by\s+/i.test(node.parent.children?.[0]?.data || '') // parent starts with "by "
+                            ) {
+                              return text;
+                            }
+                            // If the text is a likely author name (capitalized words, 2-4 words), return just the text
+                            if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(text.trim())) {
+                              return text;
+                            }
+                            return `<${href}|*${text || 'Link'}*>`; // Format links as Slack hyperlinks
+                          }
+                        }
+                      }
+                    }
                   });
                 }
 
-                // Remove content before "TLDR"
-                const tldrIndex = body.search(/TLDR\s+\d{4}-\d{2}-\d{2}/); // Find the index of "TLDR YYYY-MM-DD"
-                if (tldrIndex !== -1) {  // If "TLDR" is found, keep content from that point onward
-                  body = body.substring(tldrIndex).trim();
+                // Remove everything before and including "Together With ..."
+                const togetherWithRegex = /[\s\S]*?Together With[^\n]*\n?/i;
+                body = body.replace(togetherWithRegex, '');
+
+
+                const tldrRegex = /^TLDR.*(?:\d{4}-\d{2}-\d{2})?/im; // Matches any line starting with TLDR (case-insensitive, multiline)
+                const tldrMatch = body.match(tldrRegex);
+                if (tldrMatch) {
+                  body = body.substring(tldrMatch.index).trim();
                 }
 
                 // Remove content below "Love TLDR? Tell your friends and get rewards!"
                 const tldrEndIndex = body.search(/Love TLDR\? Tell your friends and get rewards!/);
-                if (tldrEndIndex !== -1) { // if the end marker is found, truncate the body
-                  body = body.substring(0, tldrEndIndex).trim(); // Keep content before the end marker
+                if (tldrEndIndex !== -1) {
+                  body = body.substring(0, tldrEndIndex).trim();
+                }
+
+                // Remove content below "how did we do today" (case-insensitive, inclusive)
+                const feedbackIndex = body.search(/how did we do today/i);
+                if (feedbackIndex !== -1) {
+                  body = body.substring(0, feedbackIndex).trim();
                 }
 
                 // Remove MIME headers and boundary markers
                 body = body.replace(/Content-Type:.*?(\r\n|\n|\r)+/g, '') // Remove Content-Type headers
-                .replace(/Content-Transfer-Encoding:.*?(\r\n|\n|\r)+/g, '') // Remove Content-Transfer-Encoding headers
-                .replace(/--.*?(\r\n|\n|\r)+/g, '') // Remove boundary markers
-                .replace(/(\r\n|\n|\r)+/g, '\n') // Normalize line breaks
-                .replace(/<[^>]+>/g, '') // Remove HTML tags
-                .replace(/[^\x20-\x7E\n]/g, '') // Remove non-ASCII characters
-                .replace(/^(?:[A-Z0-9 &]+)$/gm, (match) => `*${match.trim()}*`) // Bold capitalized subjects
-                .replace(/^\[|\]$/gm, ''); // Remove stray brackets
-               
+                  .replace(/Content-Transfer-Encoding:.*?(\r\n|\n|\r)+/g, '') // Remove Content-Transfer-Encoding headers
+                  .replace(/--.*?(\r\n|\n|\r)+/g, '') // Remove boundary markers
+                  .replace(/(\r\n|\n|\r)+/g, '\n') // Normalize line breaks
+                  .replace(/<[^>]+>/g, '') // Remove HTML tags
+                  .replace(/[^\x20-\x7E\n]/g, '') // Remove non-ASCII characters
+                  .replace(/^(?:[A-Z0-9 &]+)$/gm, (match) => `*${match.trim()}*`) // Bold capitalized subjects
+                  .replace(/^\[|\]$/gm, '') // Remove stray brackets
+                  .replace(/https?:\/\/\S+\.(png|jpg|jpeg|gif|svg)/gi, '') // Remove all image links (ending with .png, .jpg, .jpeg, .gif, .svg)
+                  .replace(/^\s*by [A-Z][a-z]+(?: [A-Z][a-z]+)*.*(\n|$)/gim, '') // Remove lines starting with "by" followed by capitalized names
+  
+
                 emailData.body = body.trim(); // Store the decoded body.
               } catch (err) {
                 console.error('Error decoding email body:', err);
@@ -148,6 +178,7 @@ imap.once('ready', () => {
             }
           });
         });
+
 
         // Event: When the message fetching is complete
         msg.once('end', async () => {
@@ -159,6 +190,7 @@ imap.once('ready', () => {
 
       fetch.on('end', () => {
         console.log('✅ Done fetching.'); // Log that fetching is complete.
+        imap.addFlags(results, '\\Seen', () => {}); // Mark all processed emails as seen
         imap.end(); // Close the IMAP connection.
       });
       });
