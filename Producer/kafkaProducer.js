@@ -84,9 +84,9 @@ imap.once('ready', () => {
 
     // search unread emails
     setInterval(()=>{
-      imap.search(['UNSEEN',['SINCE', '18-JUNE-2025']], (err, results) => {
-      if (err || !results.length) {
-        console.log('Error during IMAP search or No unread emails found.');
+      imap.search(['UNSEEN',['SINCE', '20-JUNE-2025']], (err, results) => {
+      if (err) {
+        console.log('Error during IMAP search:', err); // Log any errors during the search.
         return;
       };
       // Fetch unread emails
