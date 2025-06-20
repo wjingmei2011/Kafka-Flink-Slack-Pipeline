@@ -20,6 +20,7 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
+
 // Kafka configuration
 const kafka = new Kafka({
   clientId: 'news-producer', // A unique identifier for this Kafka client.
@@ -81,12 +82,11 @@ imap.once('ready', () => {
     console.log(`✅ Connected to: ${box.name}`); // Log the name of the mailbox.
     console.log(`📬 Total messages: ${box.messages.total}`); // Log the total number of messages in the mailbox.
 
-    
     // search unread emails
-    const search = imap.search(['UNSEEN',['SINCE', '18-JUNE-2025']], (err, results) => {
+    setInterval(()=>{
+      imap.search(['UNSEEN',['SINCE', '18-JUNE-2025']], (err, results) => {
       if (err || !results.length) {
         console.log('Error during IMAP search or No unread emails found.');
-        imap.end();
         return;
       };
       // Fetch unread emails
@@ -205,9 +205,9 @@ imap.once('ready', () => {
       fetch.on('end', () => {
         console.log('✅ Done fetching.'); // Log that fetching is complete.
         imap.addFlags(results, '\\Seen', () => {}); // Mark all processed emails as seen
-        imap.end(); // Close the IMAP connection.
       });
       });
+    }, 60000) // Check for new emails every 60 seconds
   });
 });
 
