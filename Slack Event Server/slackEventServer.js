@@ -186,8 +186,7 @@ async function getRecentChannelHistory(client, channelId, limit = 100) {
     
     return history.messages
       .reverse() // Show oldest first
-      .filter(msg => !msg.bot_id) // Filter out bot messages
-      .map(msg => `${msg.user}: ${msg.text}`)
+      .map(msg => `${msg.user}: ${msg.text}`) // Format as "user: message"
       .join('\n');
   } catch (error) {
     console.error('Error getting channel history:', error);
@@ -195,12 +194,30 @@ async function getRecentChannelHistory(client, channelId, limit = 100) {
   }
 }
 
+// Function to get recent thread history
+async function getRecentThreadHistory(client, channelId, threadTs, limit = 100) {
+  try {
+    const history = await client.conversations.replies({
+      channel: channelId,
+      ts: threadTs,
+      limit: limit
+    });
+    
+    return history.messages
+      .reverse() // Show oldest first
+      .map(msg => `${msg.user}: ${msg.text}`) // Format as "user: message"
+      .join('\n');
+  } catch (error) {
+    console.error('Error getting thread history:', error);
+    return '';
+  }
+}
+
 // Function to generate Claude response (integrate with your existing Claude logic)
 async function generateClaudeResponse(userMessage, context) {
   try {
-
     let contextInfo = '';
-    const recentHistory = await getRecentChannelHistory(context.client, context.channel, 50); // Get recent channel history
+    const recentHistory = context.thread_ts ? await getRecentThreadHistory(context.client, context.channel, context.thread_ts) : await getRecentChannelHistory(context.client, context.channel);
     if (recentHistory) {
       contextInfo = `\n\nRecent channel context:\n${recentHistory}\n\n`;
     }
