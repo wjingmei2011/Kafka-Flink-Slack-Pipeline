@@ -1,21 +1,27 @@
 
-const express = require('express');
-const app = express();
+
+
 const PORT = process.env.PORT || 3000; // Port for the server
 
 const axios = require('axios');
-const { App } = require('@slack/bolt');
+const { App, ExpressReceiver } = require('@slack/bolt');
 const Anthropic = require('@anthropic-ai/sdk');
 const dotenv = require('dotenv');
 dotenv.config(); // Load environment variables from .env file
 
+const receiver =  new ExpressReceiver({
+  signingSecret: process.env.SLACK_SIGNING_SECRET }); // Slack signing secret for verification
 
 // Initialize Slack app with your existing tokens
 const slackApp = new App({
   token: process.env.SLACK_BOT_TOKEN,
-  appToken: process.env.SLACK_APP_TOKEN,
-  socketMode: true,
+  receiver,
   processBeforeResponse: true
+});
+
+const app = receiver.app; // Get the Express app from the receiver
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
 
 // Initialize Anthropic client with your Claude API key
@@ -240,8 +246,7 @@ async function generateClaudeResponse(userMessage, context) {
 // Start the Slack app
 (async () => {
   try {
-    await slackApp.start();
-    console.log('⚡️ Slack auto-handler is running!');
+    console.log('⚡️ Slack Bolt app is set up with ExpressReceiver!');
   } catch (error) {
     console.error('Failed to start Slack app:', error);
   }
@@ -252,6 +257,3 @@ app.get ('/', (req, res) => {
   res.send('Slack Event Server is running!'); // Basic endpoint to check server status
 }
 );
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
