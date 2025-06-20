@@ -17,6 +17,7 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
+
 // Kafka configuration
 
 const kafka = new Kafka({
@@ -58,7 +59,8 @@ async function consumeMessages() {
         eachMessage: async ({ topic, partition, message }) => {
         try {
             const deserializedMessage = emailSchema.fromBuffer(message.value); // Deserialize the message using Avro schema
-            console.log(`Consumed message from topic ${topic}:`, deserializedMessage);
+            console.log(`📥 Consumed message at offset ${message.offset} (partition ${partition}):`, deserializedMessage);
+
 
             // Send the message to Slack
             await sendToSlack(deserializedMessage);
