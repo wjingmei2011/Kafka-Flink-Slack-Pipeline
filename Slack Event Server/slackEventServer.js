@@ -251,15 +251,6 @@ async function generateClaudeResponse(userMessage, context) {
 } 
 }
 
-// Start the Slack app
-(async () => {
-  try {
-    console.log('⚡️ Slack Bolt app is set up with ExpressReceiver!');
-  } catch (error) {
-    console.error('Failed to start Slack app:', error);
-  }
-})();
-
 // Basic Express server setup
 app.get ('/', (req, res) => {
   res.send('Slack Event Server is running!'); // Basic endpoint to check server status
