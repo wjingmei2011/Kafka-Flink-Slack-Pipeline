@@ -20,6 +20,15 @@ const slackApp = new App({
 });
 
 const app = receiver.app; // Get the Express app from the receiver
+
+// Handle Slack's URL verification challenge
+app.post('/slack/events', express.json(), (req, res) => {
+  if (req.body.type === 'url_verification') {
+    return res.status(200).send(req.body.challenge);
+  }
+});
+
+// Start the Express server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
