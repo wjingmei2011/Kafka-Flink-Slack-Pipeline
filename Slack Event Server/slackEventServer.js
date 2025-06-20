@@ -1,8 +1,5 @@
 
-
-
-const PORT = process.env.PORT || 3000; // Port for the server
-
+const express = require('express');
 const axios = require('axios');
 const { App, ExpressReceiver } = require('@slack/bolt');
 const Anthropic = require('@anthropic-ai/sdk');
@@ -27,6 +24,8 @@ app.post('/slack/events', express.json(), (req, res) => {
     return res.status(200).send(req.body.challenge);
   }
 });
+
+const PORT = process.env.PORT || 3000; // Port for the server
 
 // Start the Express server
 app.listen(PORT, () => {
