@@ -77,7 +77,10 @@ async function sendToKafka(topic, message) {
 // Event: When IMAP is ready
 imap.once('ready', () => {
   openBox(async (err, box) => {
-    if (err) throw err; // If there's an error opening the mailbox, throw it.
+    if (err) {
+      console.error('Error opening mailbox:',err);// If there's an error opening the mailbox, throw it.
+      return;
+    }
 
     console.log(`✅ Connected to: ${box.name}`); // Log the name of the mailbox.
     console.log(`📬 Total messages: ${box.messages.total}`); // Log the total number of messages in the mailbox.
@@ -196,7 +199,11 @@ imap.once('ready', () => {
 
         // Event: When the message fetching is complete
         msg.once('end', async () => {
-          await sendToKafka(topicName, emailData); // Send the email data to Kafka.
+          try {
+            await sendToKafka(topicName, emailData);
+          } catch (err) {
+            console.error('Error sending to Kafka:', err);
+          }
         });
       });
 
@@ -204,7 +211,6 @@ imap.once('ready', () => {
 
       fetch.on('end', () => {
         console.log('✅ Done fetching.'); // Log that fetching is complete.
-        imap.addFlags(results, '\\Seen', () => {}); // Mark all processed emails as seen
       });
       });
     }, 60000) // Check for new emails every 60 seconds
@@ -224,7 +230,25 @@ imap.once('end', () => {
 
 // Start the IMAP connection
 (async () => {
+  try {
   console.log('Connecting to IMAP and Kafka...'); // Log the start of the connection process.
   await producer.connect(); // Connect to the Kafka broker.
   imap.connect(); // Connect to the IMAP server.
+  } catch (error) {
+    console.error('❌ Error connecting to IMAP or Kafka:', error); // Log any errors during connection.
+  }
 })();
+
+//gracefully shut down the producer and IMAP connection on process exit
+process.on('SIGINT', async () => {
+  console.log('🔌 Shutting down gracefully...'); // Log the shutdown process.
+  try {
+    await producer.disconnect(); // Disconnect the Kafka producer.
+    imap.end(); // Close the IMAP connection.
+    console.log('✅ Shutdown complete.'); // Log successful shutdown.
+    process.exit(0); // Exit the process with success code.
+  } catch (error) {
+    console.error('❌ Error during shutdown:', error); // Log any errors during shutdown.
+    process.exit(1); // Exit the process with error code.
+  }
+});
