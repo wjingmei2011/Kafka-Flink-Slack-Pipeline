@@ -88,7 +88,7 @@ imap.once('ready', () => {
 
     // search unread emails
     
-      imap.search(['UNSEEN',['SINCE', '27-JUNE-2025']], (err, results) => {
+      imap.search(['UNSEEN',['SINCE', '30-JUNE-2025']], (err, results) => {
       if (err) {
         console.log('Error during IMAP search:', err); // Log any errors during the search.
         return;
@@ -207,6 +207,14 @@ imap.once('ready', () => {
         msg.once('end', async () => {
           try {
             await sendToKafka(topicName, emailData);
+            // mark the message as seen
+            imap.addFlags(seqno, '\\Seen', (err) => {
+              if (err) {
+                console.error('Error marking message as seen:', err); // Log any errors marking the message as seen.
+              } else {
+                console.log(`✅ Marked message #${seqno} as seen.`); // Log that the message has been marked as seen.
+              }
+            });
           } catch (err) {
             console.error('Error sending to Kafka:', err);
           }
