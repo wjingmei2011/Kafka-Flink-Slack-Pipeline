@@ -25,7 +25,14 @@ app.post('/slack/events', express.json(), (req, res) => {
   }
 });
 
+
+// Basic Express server setup
 const PORT = process.env.PORT || 3000; // Port for the server
+
+app.get ('/', (req, res) => {
+  res.send('Slack Event Server is running!'); // Basic endpoint to check server status
+}
+);
 
 // Start the Express server
 app.listen(PORT, () => {
@@ -268,8 +275,3 @@ async function generateClaudeResponse(userMessage, context) {
 } 
 }
 
-// Basic Express server setup
-app.get ('/', (req, res) => {
-  res.send('Slack Event Server is running!'); // Basic endpoint to check server status
-}
-);
