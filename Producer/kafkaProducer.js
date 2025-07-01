@@ -227,8 +227,8 @@ imap.once('ready', () => {
         console.log('✅ Done fetching.'); // Log that fetching is complete.
       });
       });
-    }) // Check for new emails every 60 seconds
-  }, 60000);
+    }) 
+  }, 600000); // Check for new emails every 10 minutes
 });
 
 
