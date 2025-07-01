@@ -32,7 +32,7 @@ imap.once('ready', () => {
 
     // Fetch last message(s) based on sequence number
     // `${box.messages.total}:*` = start at last message, go to end (safe even if empty)
-    const start = Math.max(1, box.messages.total - 4); // Start from 1 or last 4 messages
+    const start = Math.max(1, box.messages.total - 3); // Start from 1 or last 4 messages
     const fetch = imap.seq.fetch(`${box.messages.total}:*`, {
       bodies: ['HEADER.FIELDS (FROM SUBJECT DATE)'], // Fetch only these headers
       struct: true                                    // Include message structure

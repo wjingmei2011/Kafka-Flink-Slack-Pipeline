@@ -76,7 +76,8 @@ async function sendToKafka(topic, message) {
 
 // Event: When IMAP is ready
 imap.once('ready', () => {
-  openBox(async (err, box) => {
+  setInterval(()=>{
+    openBox(async (err, box) => {
     if (err) {
       console.error('Error opening mailbox:',err);// If there's an error opening the mailbox, throw it.
       return;
@@ -86,13 +87,18 @@ imap.once('ready', () => {
     console.log(`📬 Total messages: ${box.messages.total}`); // Log the total number of messages in the mailbox.
 
     // search unread emails
-    setInterval(()=>{
-      imap.search(['UNSEEN',['SINCE', '20-JUNE-2025']], (err, results) => {
+    
+      imap.search(['UNSEEN',['SINCE', '27-JUNE-2025']], (err, results) => {
       if (err) {
         console.log('Error during IMAP search:', err); // Log any errors during the search.
         return;
       };
+
       // Fetch unread emails
+      if (!results || results.length === 0) {
+        console.log('No unread emails found.');
+        return;
+      }
       const fetch = imap.fetch(results, {
         bodies: ['HEADER.FIELDS (SUBJECT)', 'TEXT'], // Fetch subject and body.
         struct: true, // Include the structure of the email (e.g., attachments).
@@ -213,8 +219,8 @@ imap.once('ready', () => {
         console.log('✅ Done fetching.'); // Log that fetching is complete.
       });
       });
-    }, 60000) // Check for new emails every 60 seconds
-  });
+    }) // Check for new emails every 60 seconds
+  }, 60000);
 });
 
 
@@ -245,7 +251,7 @@ process.on('SIGINT', async () => {
   try {
     await producer.disconnect(); // Disconnect the Kafka producer.
     imap.end(); // Close the IMAP connection.
-    console.log('✅ Shutdown complete.'); // Log successful shutdown.
+    console.log('✅ Kafka and IMAP Shutdown complete.'); // Log successful shutdown.
     process.exit(0); // Exit the process with success code.
   } catch (error) {
     console.error('❌ Error during shutdown:', error); // Log any errors during shutdown.
