@@ -13,6 +13,7 @@ const PORT = process.env.PORT || 3000; // Port for the server
 
 // Basic Express server setup
 app.get ('/', (req, res) => {
+  console.log('Health check received');
   res.send('Producer Server is running!'); // Basic endpoint to check server status
 }
 );
