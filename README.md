@@ -2,8 +2,7 @@
 
 A real-time data pipeline that fetches emails from Gmail, processes and publishes them into Kafka, enriches content, and automatically interacts with Slack users using a Claude-powered Slack event server.
 
----
-## 🚀 Overview and Use Case
+## Overview and Use Case
 
 This project automates real-time streaming of multiple **email-based newsletter sources** (e.g., New Stack Daily, TLDR Tech/Data) into Slack (or any interface of the user's choice), enriched by a Large Language Model (Claude) with web serch capability. 
 
@@ -12,12 +11,10 @@ This project automates real-time streaming of multiple **email-based newsletter 
 - **Real-Time Interactivity**: Immediately engage with news content by asking follow-up questions directly in Slack, eliminating the need to switch between reading newsletters and interacting with chatbots.
 - **Enhanced Contextual Understanding**: Use Claude’s powerful natural language processing capabilities to provide instant summaries, perform real-time searches, and answer queries, enriching your news consumption experience.
 
-**Ideal Use Cases:**
+### Ideal Use Cases:
 - Busy professionals needing quick, consolidated insights from multiple industry newsletters.
 - Teams seeking an integrated workflow, combining content consumption and discussion in one intuitive interface.
 - Anyone who values real-time access to interactive, contextually enriched news content within their daily communication tools.
-
----
 
 ### Workflow:
 - **Fetch Emails**: Periodically checks Gmail via IMAP, parsing newsletters.
@@ -39,7 +36,7 @@ This project automates real-time streaming of multiple **email-based newsletter 
 - **HTML-to-text** – Email content processing
 
 
-## 🎯 Rationale Behind Tech Choices
+## Rationale Behind Tech Choices
 
 ### Kafka (KafkaJS)
 - **Why**: Highly scalable, fault-tolerant, integrates smoothly with real-time systems.
@@ -77,6 +74,11 @@ This project automates real-time streaming of multiple **email-based newsletter 
 - **Step 3**: Verify that the Kafka Consumer correctly processes the email content and posts it to Slack.
 - **Step 4**: Mention your Slack bot or send it a direct message (DM) to validate automated responses from Claude.
 
+
+## 📄 License
+Apache License 2.0 — see [LICENSE](https://www.apache.org/licenses/LICENSE-2.0) for details.
+
+
 ---
 
 ## Takeaways & Learnings
@@ -110,7 +112,3 @@ Ensuring accurate parsing of email content was critical:
 Overall, this project underscored the necessity of thoughtful architecture design, robust error handling, and detailed consideration of interactions between system components
 
 ---
-
-## 📄 License
-Apache License 2.0 — see [LICENSE](https://www.apache.org/licenses/LICENSE-2.0) for details.
-
