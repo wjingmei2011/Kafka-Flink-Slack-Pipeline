@@ -75,6 +75,9 @@ This project automates real-time streaming of multiple **email-based newsletter 
 - **Step 4**: Mention your Slack bot or send it a direct message (DM) to validate automated responses from Claude.
 
 
+## 🧩 Future Enhancements
+Apache Flink Integration: Add stream processing logic.
+
 ## 📄 License
 Apache License 2.0 — see [LICENSE](https://www.apache.org/licenses/LICENSE-2.0) for details.
 
@@ -94,21 +97,22 @@ Despite using high-performance technologies like Kafka and Flink, upstream data 
 - Batch processing to optimize costs.
 
 2. **Slack Bot Permissions & Event Handling Complexity**
-- Defining Slack bot permissions (e.g., thread history, channel history) and event subscription rules required careful consideration to balance functionality and security.
+- Defining Slack bot permissions (e.g., thread history, channel history) and event subscription rules required careful consideration to balance functionality, performance and cost.
 
 - Managing context was particularly challenging, especially when deciding how the bot should respond:
-    - Directly in channels versus threads.
-    - Contextual understanding of messages within threads versus the broader channel context.
+    - Directly in channels vs. threads.
+    - Contextual understanding of messages within threads vs. the broader channel context.
 
-3. **Robust Email Parsing & Formatting**
+3. **Robust Email Parsing & Output Formatting**
+
 Ensuring accurate parsing of email content was critical:
 
-- Diverse email formatting across different email clients made consistent extraction challenging.
+- Diverse email formatting across different email clients made consistent extraction challenging (e.g. Multipart MIME, HTML, hybrid etc.)
 
 - Parsing logic needed to accommodate these variations and align with Slack’s markdown formatting rules.
 
 - Iterative testing was essential for achieving reliability.
 
-Overall, this project underscored the necessity of thoughtful architecture design, robust error handling, and detailed consideration of interactions between system components
 
----
+Overall, building this pipeline reinforced the importance of carefully managing real-world constraints within streaming systems, thoughtfully designing conversational agents for effective user interactions, and implementing robust parsing logic for diverse content formats. These insights are essential for successfully integrating complex technologies and ensuring reliable, meaningful experiences in future data-driven applications.
+
