@@ -240,7 +240,15 @@ imap.once('error', (err) => {
 
 // Event: When IMAP connection closes
 imap.once('end', () => {
-  console.log('🔌 Connection closed.'); // Log when the IMAP connection is closed.
+  console.log('🔌 Connection closed. Reconnecting...'); // Log when the IMAP connection is closed.
+  setTimeout(() => {
+    imap.connect(); // Attempt to reconnect to the IMAP server.
+  }, 5000); // Wait for 5 seconds before reconnecting.  
+});
+
+imap.once('error', (err) => {
+  console.error('❌ IMAP error:', err); // Log any errors that occur during the IMAP connection.
+  imap.end(); // triggers 'end' and reconnect logic
 });
 
 // Start the IMAP connection
