@@ -89,7 +89,7 @@ imap.once('ready', () => {
 
     // search unread emails
     
-      imap.search(['UNSEEN',['SINCE', '25-AUG-2025']], (err, results) => {
+      imap.search(['UNSEEN',['SINCE', '29-AUG-2025']], (err, results) => {
       if (err) {
         console.log('Error during IMAP search:', err); // Log any errors during the search.
         return;
